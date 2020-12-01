@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "advent2020"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "im-rc",
 ]

@@ -5,7 +5,11 @@ pub fn execute() {
     let entries = get_entries();
     println!(
         "1:1 — Product of two entries that sum to 2020: {}",
-        get_product_of_entries_that_sum_to_2020(&entries).unwrap()
+        find_product_of_pair_with_sum(2020, 0, &entries).unwrap()
+    );
+    println!(
+        "1:2 — Product of three entries that sum to 2020: {}",
+        find_product_of_triplet_with_sum(2020, 0, &entries).unwrap()
     );
 }
 
@@ -18,14 +22,26 @@ fn get_entries() -> Vector<u32> {
         .collect()
 }
 
-fn get_product_of_entries_that_sum_to_2020(entries: &Vector<u32>) -> Option<u32> {
+fn find_product_of_pair_with_sum(sum: u32, start: usize, entries: &Vector<u32>) -> Option<u32> {
     entries
         .iter()
+        .skip(start)
+        .filter(|v| **v < sum)
         .enumerate()
-        .flat_map(|(i, v)| find_pair(i, *v, &entries).map(|v2| v * v2))
+        .flat_map(|(i, v)| find_value(sum - v, i + 1, &entries).map(|v2| v * v2))
         .next()
 }
 
-fn find_pair(i: usize, v: u32, entries: &Vector<u32>) -> Option<u32> {
-    entries.iter().skip(i).find(|v2| v + **v2 == 2020).copied()
+fn find_value(value: u32, start: usize, entries: &Vector<u32>) -> Option<u32> {
+    entries.iter().skip(start).find(|v| **v == value).copied()
+}
+
+fn find_product_of_triplet_with_sum(sum: u32, start: usize, entries: &Vector<u32>) -> Option<u32> {
+    entries
+        .iter()
+        .skip(start)
+        .filter(|v| **v < sum)
+        .enumerate()
+        .flat_map(|(i, v)| find_product_of_pair_with_sum(sum - v, i + 1, &entries).map(|v2| v * v2))
+        .next()
 }
