@@ -20,6 +20,7 @@ fn execute_puzzle(day: String) {
     match day.as_str() {
         "1" => puzzle::day1::execute(),
         "2" => puzzle::day2::execute(),
+        "3" => puzzle::day3::execute(),
         _ => println!("Unknown day: {}", day),
     }
 }
