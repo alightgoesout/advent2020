@@ -1,6 +1,6 @@
 use std::ops::{Add, Rem};
 
-use im_rc::Vector;
+use im_rc::{vector, Vector};
 
 use crate::puzzle::input::read_lines;
 
@@ -12,10 +12,28 @@ pub fn execute() {
         "3:1 — Number of trees on slope: {}",
         count_trees_on_slope(&topology, Slope::new(3, 1)),
     );
+    let slopes = vector![
+        Slope::new(1, 1),
+        Slope::new(3, 1),
+        Slope::new(5, 1),
+        Slope::new(7, 1),
+        Slope::new(1, 2),
+    ];
+    println!(
+        "3:1 — Product of trees on all slopes: {}",
+        product_of_trees_on_slopes(&topology, &slopes),
+    );
 }
 
 fn count_trees_on_slope(topology: &Topology, slope: Slope) -> usize {
     TobogganDescent::new(topology, slope).filter(|r| *r).count()
+}
+
+fn product_of_trees_on_slopes(topology: &Topology, slopes: &Vector<Slope>) -> usize {
+    slopes
+        .iter()
+        .map(|slope| count_trees_on_slope(topology, *slope))
+        .product()
 }
 
 struct Topology {
@@ -148,8 +166,6 @@ impl Rem<usize> for Position {
 
 #[cfg(test)]
 mod count_trees_on_slope_should {
-    use im_rc::vector;
-
     use super::*;
 
     #[test]
