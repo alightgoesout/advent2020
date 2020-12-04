@@ -1,6 +1,9 @@
 use im_rc::{HashMap, Vector};
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use super::input::read_lines;
+use std::ops::RangeBounds;
 
 const KEY_VALUE_SEPARATOR: char = ':';
 
@@ -9,6 +12,10 @@ pub fn execute() {
     println!(
         "4:1 — Number of valid passports: {}",
         count_valid_passports(&passports)
+    );
+    println!(
+        "4:2 — Number of fully valid passports: {}",
+        count_fully_valid_passports(&passports)
     );
 }
 
@@ -20,12 +27,90 @@ fn count_valid_passports(passports: &Vector<Passport>) -> usize {
         .count()
 }
 
+fn count_fully_valid_passports(passports: &Vector<Passport>) -> usize {
+    passports
+        .iter()
+        .map(is_fully_valid)
+        .filter(|valid| *valid)
+        .count()
+}
+
 type Passport = HashMap<String, String>;
+
+fn is_fully_valid(passport: &Passport) -> bool {
+    is_valid(passport)
+        && passport
+            .iter()
+            .all(|(key, value)| is_valid_field(key, value))
+}
+
+fn is_valid_field(key: &str, value: &str) -> bool {
+    match key {
+        "byr" => is_number_within_range(value, 1920..=2002),
+        "iyr" => is_number_within_range(value, 2010..=2020),
+        "eyr" => is_number_within_range(value, 2020..=2030),
+        "hgt" => is_valid_height(value),
+        "hcl" => is_valid_hair_color(value),
+        "ecl" => is_valid_eye_color(value),
+        "pid" => is_valid_pid(value),
+        "cid" => true,
+        _ => false,
+    }
+}
+
+fn is_number_within_range(value: &str, range: impl RangeBounds<u32>) -> bool {
+    value
+        .parse::<u32>()
+        .ok()
+        .map(|year| range.contains(&year))
+        .unwrap_or(false)
+}
+
+lazy_static! {
+    static ref HEIGHT_REGEX: Regex = Regex::new(r"^(?P<value>\d+)(?P<unit>\w{2})$").unwrap();
+}
+
+fn is_valid_height(height: &str) -> bool {
+    match HEIGHT_REGEX.captures(height) {
+        Some(captures) => {
+            let value = captures.name("value").unwrap().as_str();
+            let unit = captures.name("unit").unwrap().as_str();
+            match unit {
+                "cm" => is_number_within_range(value, 150..=193),
+                "in" => is_number_within_range(value, 59..=76),
+                _ => false,
+            }
+        }
+        None => false,
+    }
+}
+
+lazy_static! {
+    static ref HAIR_COLOR_REGEX: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
+}
+
+fn is_valid_hair_color(hair_color: &str) -> bool {
+    HAIR_COLOR_REGEX.is_match(hair_color)
+}
+
+const VALID_EYE_COLORS: [&str; 7] = ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
+
+fn is_valid_eye_color(eye_color: &str) -> bool {
+    VALID_EYE_COLORS.contains(&eye_color)
+}
+
+lazy_static! {
+    static ref PID_REGEX: Regex = Regex::new(r"^\d{9}$").unwrap();
+}
+
+fn is_valid_pid(pid: &str) -> bool {
+    PID_REGEX.is_match(pid)
+}
 
 fn is_valid(passport: &Passport) -> bool {
     match passport.len() {
         8 => true,
-        7 => passport.keys().all(|key| key.as_str() != "cid"),
+        7 => passport.keys().all(|key| key != "cid"),
         _ => false,
     }
 }
@@ -447,5 +532,55 @@ mod is_valid_should {
         };
 
         assert!(is_valid(&passport));
+    }
+}
+
+#[cfg(test)]
+mod is_fully_valid_should {
+    use im_rc::vector;
+
+    use super::*;
+
+    #[test]
+    fn return_false_for_invalid_passwords() {
+        let invalid_passports = parse_passports(vector![
+            "eyr:1972 cid:100".into(),
+            "hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926".into(),
+            "".into(),
+            "iyr:2019".into(),
+            "hcl:#602927 eyr:1967 hgt:170cm".into(),
+            "ecl:grn pid:012533040 byr:1946".into(),
+            "".into(),
+            "hcl:dab227 iyr:2012".into(),
+            "ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277".into(),
+            "".into(),
+            "hgt:59cm ecl:zzz".into(),
+            "eyr:2038 hcl:74454a iyr:2023".into(),
+            "pid:3556412378 byr:2007".into(),
+        ]);
+
+        assert!(invalid_passports
+            .iter()
+            .all(|passport| !is_fully_valid(passport)))
+    }
+
+    #[test]
+    fn return_true_for_valid_passwords() {
+        let valid_passports = parse_passports(vector![
+            "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980".into(),
+            "hcl:#623a2f".into(),
+            "".into(),
+            "eyr:2029 ecl:blu cid:129 byr:1989".into(),
+            "iyr:2014 pid:896056539 hcl:#a97842 hgt:165cm".into(),
+            "".into(),
+            "hcl:#888785".into(),
+            "hgt:164cm byr:2001 iyr:2015 cid:88".into(),
+            "pid:545766238 ecl:hzl".into(),
+            "eyr:2022".into(),
+            "".into(),
+            "iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719".into(),
+        ]);
+
+        assert!(valid_passports.iter().all(is_fully_valid));
     }
 }
