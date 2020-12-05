@@ -123,7 +123,7 @@ impl<'a> Iterator for TobogganDescent<'a> {
         } else {
             Some(self.topology.has_tree(&self.position))
         };
-        self.position = (&self.position + &self.slope) % self.topology.width;
+        self.position = (&self.position + &self.slope) % self.topology.width();
         result
     }
 }
