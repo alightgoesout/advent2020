@@ -1,7 +1,5 @@
 use std::ops::{Add, Rem};
 
-use im_rc::{vector, Vector};
-
 use crate::puzzle::input::read_lines;
 
 const TREE_CHAR: char = '#';
@@ -12,7 +10,7 @@ pub fn execute() {
         "3:1 — Number of trees on slope: {}",
         count_trees_on_slope(&topology, Slope::new(3, 1)),
     );
-    let slopes = vector![
+    let slopes = vec![
         Slope::new(1, 1),
         Slope::new(3, 1),
         Slope::new(5, 1),
@@ -29,7 +27,7 @@ fn count_trees_on_slope(topology: &Topology, slope: Slope) -> usize {
     TobogganDescent::new(topology, slope).filter(|r| *r).count()
 }
 
-fn product_of_trees_on_slopes(topology: &Topology, slopes: &Vector<Slope>) -> usize {
+fn product_of_trees_on_slopes(topology: &Topology, slopes: &[Slope]) -> usize {
     slopes
         .iter()
         .map(|slope| count_trees_on_slope(topology, *slope))
@@ -38,11 +36,11 @@ fn product_of_trees_on_slopes(topology: &Topology, slopes: &Vector<Slope>) -> us
 
 struct Topology {
     width: usize,
-    trees: Vector<TopologyLine>,
+    trees: Vec<TopologyLine>,
 }
 
 #[derive(Clone)]
-struct TopologyLine(Vector<usize>);
+struct TopologyLine(Vec<usize>);
 
 #[derive(Copy, Clone)]
 struct Position {
@@ -79,8 +77,8 @@ impl Topology {
     }
 }
 
-impl From<Vector<String>> for Topology {
-    fn from(lines: Vector<String>) -> Self {
+impl From<Vec<String>> for Topology {
+    fn from(lines: Vec<String>) -> Self {
         Self {
             width: lines.get(0).map(|line| line.len()).unwrap_or(0),
             trees: lines.into_iter().map(|line| line.into()).collect(),
@@ -170,7 +168,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_0_when_first_line_has_no_trees_and_there_is_one_line() {
-        let topology = vector![".....".into()].into();
+        let topology = vec![".....".into()].into();
         let slope = Slope::new(1, 1);
 
         let result = count_trees_on_slope(&topology, slope);
@@ -180,7 +178,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_1_when_first_line_has_a_tree_in_first_position_and_there_is_one_line() {
-        let topology = vector!["#....".into()].into();
+        let topology = vec!["#....".into()].into();
         let slope = Slope::new(1, 1);
 
         let result = count_trees_on_slope(&topology, slope);
@@ -190,7 +188,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_0_when_first_position_and_second_position_have_no_trees_and_there_are_two_lines() {
-        let topology = vector!["......".into(), "......".into()].into();
+        let topology = vec!["......".into(), "......".into()].into();
         let slope = Slope::new(1, 1);
 
         let result = count_trees_on_slope(&topology, slope);
@@ -201,7 +199,7 @@ mod count_trees_on_slope_should {
     #[test]
     fn return_1_when_first_position_has_tree_and_second_position_has_no_tree_and_there_are_two_lines(
     ) {
-        let topology = vector!["#.....".into(), "......".into()].into();
+        let topology = vec!["#.....".into(), "......".into()].into();
         let slope = Slope::new(1, 1);
 
         let result = count_trees_on_slope(&topology, slope);
@@ -211,7 +209,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_2_when_first_position_and_second_position_have_trees_and_there_are_two_lines() {
-        let topology = vector!["#.....".into(), ".#....".into()].into();
+        let topology = vec!["#.....".into(), ".#....".into()].into();
         let slope = Slope::new(1, 1);
 
         let result = count_trees_on_slope(&topology, slope);
@@ -221,7 +219,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_1_when_there_is_a_tree_on_2_2_slope_is_4_2_and_width_is_8() {
-        let topology = vector![
+        let topology = vec![
             "......".into(),
             "......".into(),
             "..#...".into(),
@@ -237,7 +235,7 @@ mod count_trees_on_slope_should {
 
     #[test]
     fn return_7_for_the_example() {
-        let topology = vector![
+        let topology = vec![
             "..##.......".into(),
             "#...#...#..".into(),
             ".#....#..#.".into(),

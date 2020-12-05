@@ -1,8 +1,8 @@
-use im_rc::{HashMap, Vector};
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use super::input::read_lines;
+use std::collections::HashMap;
 use std::ops::RangeBounds;
 
 const KEY_VALUE_SEPARATOR: char = ':';
@@ -19,7 +19,7 @@ pub fn execute() {
     );
 }
 
-fn count_valid_passports(passports: &Vector<Passport>) -> usize {
+fn count_valid_passports(passports: &[Passport]) -> usize {
     passports
         .iter()
         .map(is_valid)
@@ -27,7 +27,7 @@ fn count_valid_passports(passports: &Vector<Passport>) -> usize {
         .count()
 }
 
-fn count_fully_valid_passports(passports: &Vector<Passport>) -> usize {
+fn count_fully_valid_passports(passports: &[Passport]) -> usize {
     passports
         .iter()
         .map(is_fully_valid)
@@ -115,19 +115,19 @@ fn is_valid(passport: &Passport) -> bool {
     }
 }
 
-fn parse_passports(lines: Vector<String>) -> Vector<Passport> {
+fn parse_passports(lines: Vec<String>) -> Vec<Passport> {
     group_by_passport(lines)
         .into_iter()
         .map(parse_passport)
         .collect()
 }
 
-fn parse_passport(passport_lines: Vector<String>) -> Passport {
+fn parse_passport(passport_lines: Vec<String>) -> Passport {
     passport_lines
         .iter()
         .map(|line| {
             line.split(' ').map(|field| {
-                let entry = field.splitn(2, KEY_VALUE_SEPARATOR).collect::<Vector<_>>();
+                let entry = field.splitn(2, KEY_VALUE_SEPARATOR).collect::<Vec<_>>();
                 (entry[0].into(), entry[1].into())
             })
         })
@@ -135,44 +135,44 @@ fn parse_passport(passport_lines: Vector<String>) -> Passport {
         .collect()
 }
 
-fn group_by_passport(lines: Vector<String>) -> Vector<Vector<String>> {
-    let mut passports = Vector::new();
-    let mut accumulator = Vector::new();
+fn group_by_passport(lines: Vec<String>) -> Vec<Vec<String>> {
+    let mut passports = Vec::new();
+    let mut accumulator = Vec::new();
     for line in lines {
         if line.is_empty() {
-            passports.push_back(accumulator);
-            accumulator = Vector::new();
+            passports.push(accumulator);
+            accumulator = Vec::new();
         } else {
-            accumulator.push_back(line)
+            accumulator.push(line)
         }
     }
     if !accumulator.is_empty() {
-        passports.push_back(accumulator);
+        passports.push(accumulator);
     }
     passports
 }
 
 #[cfg(test)]
 mod group_by_passport_should {
-    use im_rc::vector;
-
     use super::*;
 
     #[test]
-    fn return_a_vector_of_size_one_when_there_is_only_one_line() {
-        let lines: Vector<String> = vector!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()];
+    fn return_a_vec_of_size_one_when_there_is_only_one_line() {
+        let lines: Vec<String> = vec!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()];
 
         let result = group_by_passport(lines);
 
         assert_eq!(
             result,
-            vector![vector!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()]]
+            vec![vec![
+                "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string()
+            ]]
         );
     }
 
     #[test]
-    fn return_a_vector_of_size_two_when_there_is_only_two_one_line_passports() {
-        let lines: Vector<String> = vector![
+    fn return_a_vec_of_size_two_when_there_is_only_two_one_line_passports() {
+        let lines: Vec<String> = vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
             "".into(),
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
@@ -182,16 +182,16 @@ mod group_by_passport_should {
 
         assert_eq!(
             result,
-            vector![
-                vector!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()],
-                vector!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()],
+            vec![
+                vec!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string()],
+                vec!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string()],
             ]
         );
     }
 
     #[test]
-    fn return_a_vector_of_size_one_when_there_is_one_passport_on_two_lines() {
-        let lines: Vector<String> = vector![
+    fn return_a_vec_of_size_one_when_there_is_one_passport_on_two_lines() {
+        let lines: Vec<String> = vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
             "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
         ];
@@ -200,16 +200,16 @@ mod group_by_passport_should {
 
         assert_eq!(
             result,
-            vector![vector![
-                "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
-                "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
+            vec![vec![
+                "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string(),
+                "byr:1937 iyr:2017 cid:147 hgt:183cm".to_string(),
             ]]
         );
     }
 
     #[test]
     fn ignore_a_last_empty_line() {
-        let lines: Vector<String> = vector![
+        let lines: Vec<String> = vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
             "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
             "".into(),
@@ -219,16 +219,16 @@ mod group_by_passport_should {
 
         assert_eq!(
             result,
-            vector![vector![
-                "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
-                "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
+            vec![vec![
+                "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string(),
+                "byr:1937 iyr:2017 cid:147 hgt:183cm".to_string(),
             ]]
         );
     }
 
     #[test]
-    fn return_a_vector_of_size_two_when_there_is_only_two_multiline_passports() {
-        let lines: Vector<String> = vector![
+    fn return_a_vec_of_size_two_when_there_is_only_two_multiline_passports() {
+        let lines: Vec<String> = vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
             "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
             "".into(),
@@ -239,12 +239,12 @@ mod group_by_passport_should {
 
         assert_eq!(
             result,
-            vector![
-                vector![
-                    "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
-                    "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
+            vec![
+                vec![
+                    "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".to_string(),
+                    "byr:1937 iyr:2017 cid:147 hgt:183cm".to_string(),
                 ],
-                vector!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()],
+                vec!["ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into()],
             ]
         );
     }
@@ -252,57 +252,57 @@ mod group_by_passport_should {
 
 #[cfg(test)]
 mod parse_passport_should {
-    use im_rc::{hashmap, vector};
-
     use super::*;
 
     #[test]
     fn return_a_passport_with_one_field_when_there_is_one_line_with_one_field() {
-        let passport_lines = vector!["ecl:gry".into()];
+        let passport_lines = vec!["ecl:gry".into()];
 
         let result = parse_passport(passport_lines);
 
         assert_eq!(
             result,
-            hashmap! {
-                "ecl".into() => "gry".into(),
-            }
+            vec![("ecl".into(), "gry".into()),].into_iter().collect(),
         )
     }
 
     #[test]
     fn return_a_passport_with_two_fields_when_there_is_one_line_with_two_fields() {
-        let passport_lines = vector!["ecl:gry pid:860033327".into()];
+        let passport_lines = vec!["ecl:gry pid:860033327".into()];
 
         let result = parse_passport(passport_lines);
 
         assert_eq!(
             result,
-            hashmap! {
-                "ecl".into() => "gry".into(),
-                "pid".into() => "860033327".into(),
-            }
+            vec![
+                ("ecl".into(), "gry".into()),
+                ("pid".into(), "860033327".into()),
+            ]
+            .into_iter()
+            .collect(),
         )
     }
 
     #[test]
     fn return_a_passport_with_two_fields_when_there_is_two_lines_with_one_field_each() {
-        let passport_lines = vector!["ecl:gry".into(), "pid:860033327".into()];
+        let passport_lines = vec!["ecl:gry".into(), "pid:860033327".into()];
 
         let result = parse_passport(passport_lines);
 
         assert_eq!(
             result,
-            hashmap! {
-                "ecl".into() => "gry".into(),
-                "pid".into() => "860033327".into(),
-            }
+            vec![
+                ("ecl".into(), "gry".into()),
+                ("pid".into(), "860033327".into()),
+            ]
+            .into_iter()
+            .collect(),
         )
     }
 
     #[test]
     fn return_a_passport_with_8_fields_when_there_is_two_lines_with_four_field_each() {
-        let passport_lines = vector![
+        let passport_lines = vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd".into(),
             "byr:1937 iyr:2017 cid:147 hgt:183cm".into(),
         ];
@@ -311,225 +311,253 @@ mod parse_passport_should {
 
         assert_eq!(
             result,
-            hashmap! {
-                "ecl".into() => "gry".into(),
-                "pid".into() => "860033327".into(),
-                "eyr".into() => "2020".into(),
-                "hcl".into() => "#fffffd".into(),
-                "byr".into() => "1937".into(),
-                "iyr".into() => "2017".into(),
-                "cid".into() => "147".into(),
-                "hgt".into() => "183cm".into(),
-            }
+            vec![
+                ("ecl".into(), "gry".into()),
+                ("pid".into(), "860033327".into()),
+                ("eyr".into(), "2020".into()),
+                ("hcl".into(), "#fffffd".into()),
+                ("byr".into(), "1937".into()),
+                ("iyr".into(), "2017".into()),
+                ("cid".into(), "147".into()),
+                ("hgt".into(), "183cm".into()),
+            ]
+            .into_iter()
+            .collect(),
         )
     }
 }
 
 #[cfg(test)]
 mod is_valid_should {
-    use im_rc::hashmap;
-
     use super::*;
 
     #[test]
     fn return_false_when_there_is_one_field() {
-        let passport = hashmap! {"ecl".into() => "gry".into()};
+        let passport = vec![("ecl".into(), "gry".into())].into_iter().collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_there_are_two_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_there_are_three_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_there_are_four_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_there_are_five_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_there_are_six_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_true_when_there_are_eight_fields() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_ecl_is_missing() {
-        let passport = hashmap! {
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_pid_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_eyr_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_hcl_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_byr_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_iyr_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "cid".into() => "147".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("cid".into(), "147".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_false_when_hgt_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "cid".into() => "147".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("cid".into(), "147".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(!is_valid(&passport));
     }
 
     #[test]
     fn return_true_when_cid_is_missing() {
-        let passport = hashmap! {
-            "ecl".into() => "gry".into(),
-            "pid".into() => "860033327".into(),
-            "eyr".into() => "2020".into(),
-            "hcl".into() => "#fffffd".into(),
-            "byr".into() => "1937".into(),
-            "iyr".into() => "2017".into(),
-            "hgt".into() => "183cm".into(),
-        };
+        let passport = vec![
+            ("ecl".into(), "gry".into()),
+            ("pid".into(), "860033327".into()),
+            ("eyr".into(), "2020".into()),
+            ("hcl".into(), "#fffffd".into()),
+            ("byr".into(), "1937".into()),
+            ("iyr".into(), "2017".into()),
+            ("hgt".into(), "183cm".into()),
+        ]
+        .into_iter()
+        .collect();
 
         assert!(is_valid(&passport));
     }
@@ -537,13 +565,11 @@ mod is_valid_should {
 
 #[cfg(test)]
 mod is_fully_valid_should {
-    use im_rc::vector;
-
     use super::*;
 
     #[test]
     fn return_false_for_invalid_passwords() {
-        let invalid_passports = parse_passports(vector![
+        let invalid_passports = parse_passports(vec![
             "eyr:1972 cid:100".into(),
             "hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926".into(),
             "".into(),
@@ -566,7 +592,7 @@ mod is_fully_valid_should {
 
     #[test]
     fn return_true_for_valid_passwords() {
-        let valid_passports = parse_passports(vector![
+        let valid_passports = parse_passports(vec![
             "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980".into(),
             "hcl:#623a2f".into(),
             "".into(),

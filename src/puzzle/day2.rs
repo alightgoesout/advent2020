@@ -1,4 +1,3 @@
-use im_rc::Vector;
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -16,7 +15,7 @@ pub fn execute() {
     );
 }
 
-fn count_valid_passwords_for_sled_policy(entries: &Vector<String>) -> usize {
+fn count_valid_passwords_for_sled_policy(entries: &[String]) -> usize {
     entries
         .iter()
         .map(|entry| parse_password_line_to_sled_policy(entry.as_str()))
@@ -32,7 +31,7 @@ fn parse_password_line_to_sled_policy(password_line: &str) -> (String, SledPassw
     )
 }
 
-fn count_valid_passwords_for_toboggan_policy(entries: &Vector<String>) -> usize {
+fn count_valid_passwords_for_toboggan_policy(entries: &[String]) -> usize {
     entries
         .iter()
         .map(|entry| parse_password_line_to_toboggan_policy(entry.as_str()))

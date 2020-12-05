@@ -1,9 +1,8 @@
 use crate::puzzle::input::read_lines;
-use im_rc::Vector;
 use std::ops::RangeInclusive;
 
 pub fn execute() {
-    let boarding_passes: Vector<BoardingPass> = read_lines("day5")
+    let boarding_passes: Vec<BoardingPass> = read_lines("day5")
         .unwrap()
         .iter()
         .map(|line| line.as_str().into())
@@ -14,7 +13,7 @@ pub fn execute() {
     );
 }
 
-fn highest_seat_id(boarding_passes: &Vector<BoardingPass>) -> u16 {
+fn highest_seat_id(boarding_passes: &[BoardingPass]) -> u16 {
     boarding_passes
         .iter()
         .map(BoardingPass::seat_id)
