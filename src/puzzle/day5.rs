@@ -11,6 +11,7 @@ pub fn execute() {
         "5:1 — Highest seat id: {}",
         highest_seat_id(&boarding_passes),
     );
+    println!("5:1 — Seat id: {}", find_seat_id(&boarding_passes));
 }
 
 fn highest_seat_id(boarding_passes: &[BoardingPass]) -> u16 {
@@ -21,7 +22,22 @@ fn highest_seat_id(boarding_passes: &[BoardingPass]) -> u16 {
         .unwrap()
 }
 
-#[derive(Clone)]
+fn find_seat_id(boarding_passes: &[BoardingPass]) -> u16 {
+    let mut seat_ids = boarding_passes
+        .iter()
+        .map(BoardingPass::seat_id)
+        .collect::<Vec<_>>();
+    seat_ids.sort_unstable();
+    seat_ids
+        .iter()
+        .enumerate()
+        .find(|(i, seat_id)| seat_ids[i + 1] != *seat_id + 1)
+        .map(|(_, seat_id)| *seat_id)
+        .unwrap()
+        + 1
+}
+
+#[derive(Clone, PartialEq, PartialOrd)]
 struct BoardingPass {
     row: u8,
     column: u8,
