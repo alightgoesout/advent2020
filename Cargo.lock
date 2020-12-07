@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "advent2020"
-version = "7.1.0"
+version = "7.2.0"
 dependencies = [
  "lazy_static",
  "regex",
