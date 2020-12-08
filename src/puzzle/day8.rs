@@ -1,10 +1,16 @@
+use crate::puzzle::day8::ExecutionResult::{Finished, InfiniteLoop};
 use crate::puzzle::input::read_lines;
+use Instruction::{Accumulator, Jump, Noop};
 
 pub fn execute() {
     let instructions = parse_instructions(read_lines("day8").unwrap());
     println!(
-        "8:1 — Value of accumulator before looping: {}",
-        ProgramExecution::from(instructions).last().unwrap(),
+        "8:1 — Value of accumulator before looping: {:?}",
+        Program::new(&instructions).execute(),
+    );
+    println!(
+        "8:2 — Value of accumulator after the fixed program terminates: {:?}",
+        fix_program(&instructions),
     );
 }
 
@@ -17,145 +23,168 @@ fn parse_instructions(lines: Vec<String>) -> Vec<Instruction> {
 }
 
 fn parse_instruction(line: String) -> Instruction {
+    let parameter = line[4..].parse().unwrap();
     match &line[..3] {
-        "acc" => Instruction::Accumulator(line[4..].parse().unwrap()),
-        "jmp" => Instruction::Jump(line[4..].parse().unwrap()),
-        _ => Instruction::Noop,
+        "acc" => Accumulator(parameter),
+        "jmp" => Jump(parameter),
+        _ => Noop(parameter),
     }
 }
 
+fn fix_program(instructions: &[Instruction]) -> Option<ExecutionResult> {
+    (0..instructions.len())
+        .map(|i| permute(&instructions, i))
+        .flatten()
+        .map(|instructions| Program::new(&instructions))
+        .map(|program| program.execute())
+        .find(|result| matches!(result, Finished(_)))
+}
+
+fn permute(instructions: &[Instruction], index: usize) -> Option<Vec<Instruction>> {
+    match &instructions[index] {
+        Noop(i) => {
+            let mut instructions = instructions.to_owned();
+            instructions[index] = Jump(*i);
+            Some(instructions)
+        }
+        Jump(i) => {
+            let mut instructions = instructions.to_owned();
+            instructions[index] = Noop(*i);
+            Some(instructions)
+        }
+        _ => None,
+    }
+}
+
+#[derive(Clone)]
 enum Instruction {
     Accumulator(i32),
     Jump(i32),
-    Noop,
+    Noop(i32),
 }
 
-struct ProgramExecution {
+#[derive(PartialEq, Debug)]
+enum ExecutionResult {
+    InfiniteLoop(i32),
+    Finished(i32),
+}
+
+struct Program {
     instructions: Vec<Instruction>,
-    accumulator: i32,
-    current_instruction: i32,
-    visited_instructions: Vec<i32>,
 }
 
-impl From<Vec<Instruction>> for ProgramExecution {
-    fn from(instructions: Vec<Instruction>) -> Self {
+impl Program {
+    fn new(instructions: &[Instruction]) -> Self {
         Self {
-            instructions,
-            accumulator: 0,
-            current_instruction: 0,
-            visited_instructions: Vec::new(),
+            instructions: instructions.to_owned(),
         }
     }
-}
 
-impl Iterator for ProgramExecution {
-    type Item = i32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.instructions.get(self.current_instruction as usize) {
-            _ if self
-                .visited_instructions
-                .contains(&self.current_instruction) =>
-            {
-                None
+    fn execute(&self) -> ExecutionResult {
+        let mut accumulator: i32 = 0;
+        let mut current_instruction: i32 = 0;
+        let mut visited_instructions: Vec<i32> = Vec::new();
+        while !visited_instructions.contains(&current_instruction)
+            && (current_instruction as usize) < self.instructions.len()
+        {
+            match self.instructions[current_instruction as usize] {
+                Noop(_) => {
+                    visited_instructions.push(current_instruction);
+                    current_instruction += 1;
+                }
+                Accumulator(i) => {
+                    visited_instructions.push(current_instruction);
+                    current_instruction += 1;
+                    accumulator += i;
+                }
+                Jump(i) => {
+                    visited_instructions.push(current_instruction);
+                    current_instruction += i;
+                }
             }
-            Some(Instruction::Noop) => {
-                self.visited_instructions.push(self.current_instruction);
-                self.current_instruction += 1;
-                Some(self.accumulator)
-            }
-            Some(Instruction::Accumulator(i)) => {
-                self.visited_instructions.push(self.current_instruction);
-                self.current_instruction += 1;
-                self.accumulator += i;
-                Some(self.accumulator)
-            }
-            Some(Instruction::Jump(i)) => {
-                self.visited_instructions.push(self.current_instruction);
-                self.current_instruction += i;
-                Some(self.accumulator)
-            }
-            _ => None,
+        }
+        if visited_instructions.contains(&current_instruction) {
+            InfiniteLoop(accumulator)
+        } else {
+            Finished(accumulator)
         }
     }
 }
 
 #[cfg(test)]
-mod program_execution_next_should {
-    use Instruction::{Accumulator, Jump, Noop};
-
+mod program_execution_execute_should {
     use super::*;
 
     #[test]
     fn return_0_when_current_instruction_is_noop_and_accumulator_is_0() {
-        let mut execution: ProgramExecution = vec![Noop].into();
+        let program = Program::new(&[Noop(0)]);
 
-        let result = execution.next();
+        let result = program.execute();
 
-        assert_eq!(result, Some(0))
+        assert_eq!(result, Finished(0))
     }
 
     #[test]
     fn return_1_when_current_instruction_is_acc_1_and_accumulator_is_0() {
-        let mut execution: ProgramExecution = vec![Accumulator(1)].into();
+        let program = Program::new(&[Accumulator(1)]);
 
-        let result = execution.next();
+        let result = program.execute();
 
-        assert_eq!(result, Some(1))
+        assert_eq!(result, Finished(1))
     }
 
     #[test]
     fn return_2_when_current_instruction_is_acc_2_and_accumulator_is_0() {
-        let mut execution: ProgramExecution = vec![Accumulator(2)].into();
+        let program = Program::new(&[Accumulator(2)]);
 
-        let result = execution.next();
+        let result = program.execute();
 
-        assert_eq!(result, Some(2))
+        assert_eq!(result, Finished(2))
     }
 
     #[test]
     fn return_0_when_instructions_are_acc_3_and_acc_minus_3() {
-        let mut execution: ProgramExecution = vec![Accumulator(3), Accumulator(-3)].into();
+        let program = Program::new(&[Accumulator(3), Accumulator(-3)]);
 
-        let result = execution.nth(1);
+        let result = program.execute();
 
-        assert_eq!(result, Some(0))
+        assert_eq!(result, Finished(0))
     }
 
     #[test]
     fn return_3_when_instructions_are_acc_3_and_noop() {
-        let mut execution: ProgramExecution = vec![Accumulator(3), Noop].into();
+        let program = Program::new(&[Accumulator(3), Noop(0)]);
 
-        let result = execution.nth(1);
+        let result = program.execute();
 
-        assert_eq!(result, Some(3))
+        assert_eq!(result, Finished(3))
     }
 
     #[test]
     fn return_3_when_instructions_are_noop_and_acc_3() {
-        let mut execution: ProgramExecution = vec![Noop, Accumulator(3)].into();
+        let program = Program::new(&[Noop(0), Accumulator(3)]);
 
-        let result = execution.nth(1);
+        let result = program.execute();
 
-        assert_eq!(result, Some(3))
+        assert_eq!(result, Finished(3))
     }
 
     #[test]
     fn return_7_when_instructions_are_jmp_2_acc_3_acc_7() {
-        let mut execution: ProgramExecution = vec![Jump(2), Accumulator(3), Accumulator(7)].into();
+        let program = Program::new(&[Jump(2), Accumulator(3), Accumulator(7)]);
 
-        let result = execution.nth(1);
+        let result = program.execute();
 
-        assert_eq!(result, Some(7))
+        assert_eq!(result, Finished(7))
     }
 
     #[test]
-    fn return_none_when_current_instruction_has_already_been_executed() {
-        let mut execution: ProgramExecution = vec![Noop, Jump(-1)].into();
+    fn return_infinite_loop_when_current_instruction_has_already_been_executed() {
+        let program = Program::new(&[Noop(0), Jump(-1)]);
 
-        let result = execution.nth(2);
+        let result = program.execute();
 
-        assert!(result.is_none())
+        assert_eq!(result, InfiniteLoop(0))
     }
 }
 
@@ -165,7 +194,7 @@ mod program_execution_last_should {
 
     #[test]
     fn return_5_for_example_program() {
-        let mut execution: ProgramExecution = parse_instructions(vec![
+        let program = Program::new(&parse_instructions(vec![
             "nop +0".into(),
             "acc +1".into(),
             "jmp +4".into(),
@@ -175,11 +204,10 @@ mod program_execution_last_should {
             "acc +1".into(),
             "jmp -4".into(),
             "acc +6".into(),
-        ])
-        .into();
+        ]));
 
-        let result = execution.last();
+        let result = program.execute();
 
-        assert_eq!(result, Some(5));
+        assert_eq!(result, InfiniteLoop(5));
     }
 }
