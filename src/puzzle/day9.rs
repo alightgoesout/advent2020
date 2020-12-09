@@ -3,9 +3,14 @@ use itertools::Itertools;
 
 pub fn execute() {
     let numbers = get_numbers();
+    let first_invalid_number = validate(&numbers, 25).unwrap();
+    println!("9:1 — First invalid number: {}", first_invalid_number,);
+    let range = find_range_with_sum(&numbers, first_invalid_number);
+    let lowest = range.iter().min().unwrap();
+    let highest = range.iter().max().unwrap();
     println!(
-        "9:1 — First invalid number: {}",
-        validate(&numbers, 25).unwrap()
+        "9:2 — Sum of smallest and largest in range: {}",
+        lowest + highest,
     );
 }
 
@@ -31,6 +36,21 @@ fn is_valid(window: &[u64]) -> bool {
         .iter()
         .combinations(2)
         .any(|c| c[0] + c[1] == last)
+}
+
+fn find_range_with_sum(numbers: &[u64], sum: u64) -> &[u64] {
+    for i in 0..numbers.len() {
+        let mut s = numbers[i];
+        let mut j = i + 1;
+        while s < sum && j < numbers.len() {
+            s += numbers[j];
+            j += 1;
+        }
+        if sum == s {
+            return &numbers[i..j];
+        }
+    }
+    &[]
 }
 
 #[cfg(test)]
