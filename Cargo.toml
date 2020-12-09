@@ -1,9 +1,10 @@
 [package]
 name = "advent2020"
-version = "8.2.0"
+version = "9.1.0"
 authors = ["Romain Delamare <romain@delama.re>"]
 edition = "2018"
 
 [dependencies]
 regex = "1"
 lazy_static = "1.4.0"
+itertools = "0.9.0"
