@@ -1,4 +1,5 @@
 use crate::puzzle::input::read_lines;
+use itertools::Itertools;
 use std::collections::HashSet;
 
 pub fn execute() {
@@ -8,18 +9,26 @@ pub fn execute() {
         "10:1 — Product of 1-jolt differences and 3-jolts differences: {}",
         diff1 * diff3,
     );
+    println!(
+        "10:2 — Total number of adapter arrangements: {}",
+        total_arrangements(&adapters),
+    );
 }
 
-fn get_adapters() -> HashSet<u32> {
-    read_lines("day10")
+fn get_adapters() -> HashSet<u64> {
+    let mut adapters = read_lines("day10")
         .unwrap()
         .iter()
         .filter(|s| !s.is_empty())
         .map(|s| s.parse().unwrap())
-        .collect()
+        .collect::<HashSet<_>>();
+    let max = adapters.iter().max().copied().unwrap();
+    adapters.insert(0);
+    adapters.insert(max + 3);
+    adapters
 }
 
-fn count_jolt_differences(chain: &[u32]) -> (usize, usize) {
+fn count_jolt_differences(chain: &[u64]) -> (usize, usize) {
     let (diff1, diff3) = chain
         .windows(2)
         .map(|window| window[1] - window[0])
@@ -28,8 +37,7 @@ fn count_jolt_differences(chain: &[u32]) -> (usize, usize) {
     (diff1.len(), diff3.len())
 }
 
-fn compute_adapter_chain(adapters: &HashSet<u32>) -> Vec<u32> {
-    let adapters = add_device_joltage(adapters);
+fn compute_adapter_chain(adapters: &HashSet<u64>) -> Vec<u64> {
     let mut chain = vec![0];
     let mut current_joltage = 0;
     while let Some(joltage) = find_adapter(current_joltage, &adapters) {
@@ -39,18 +47,77 @@ fn compute_adapter_chain(adapters: &HashSet<u32>) -> Vec<u32> {
     chain
 }
 
-fn add_device_joltage(adapters: &HashSet<u32>) -> HashSet<u32> {
-    let max = adapters.iter().max().copied().unwrap();
-    let adapters = adapters | &[max + 3].iter().copied().collect::<HashSet<_>>();
-    adapters
-}
-
-fn find_adapter(joltage: u32, adapters: &HashSet<u32>) -> Option<u32> {
+fn find_adapter(joltage: u64, adapters: &HashSet<u64>) -> Option<u64> {
     adapters
         .get(&(joltage + 1))
         .or_else(|| adapters.get(&(joltage + 2)))
         .or_else(|| adapters.get(&(joltage + 3)))
         .copied()
+}
+
+fn total_arrangements(adapters: &HashSet<u64>) -> u64 {
+    adapters
+        .iter()
+        .sorted()
+        .copied()
+        .contiguous()
+        .map(|group| nb_combinations(group.len()))
+        .product()
+}
+
+fn nb_combinations(group_size: usize) -> u64 {
+    match group_size {
+        0 => 0,
+        1 | 2 => 1,
+        n => nb_combinations(n - 1) + nb_combinations(n - 2) + nb_combinations(n - 3),
+    }
+}
+
+struct ContiguousIntegers<I>
+where
+    I: Iterator<Item = u64>,
+{
+    iterator: I,
+    previous_value: Option<u64>,
+}
+
+impl<I> Iterator for ContiguousIntegers<I>
+where
+    I: Iterator<Item = u64>,
+{
+    type Item = Vec<u64>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut values = self.previous_value.into_iter().collect::<Vec<_>>();
+        while let Some(i) = self.iterator.next() {
+            if values.is_empty() || i - values.last().unwrap() == 1 {
+                values.push(i)
+            } else {
+                self.previous_value = Some(i);
+                return Some(values);
+            }
+        }
+        None
+    }
+}
+
+trait IntoContiguousIntegers<I>
+where
+    I: Iterator<Item = u64>,
+{
+    fn contiguous(self) -> ContiguousIntegers<I>;
+}
+
+impl<I> IntoContiguousIntegers<I> for I
+where
+    I: Iterator<Item = u64>,
+{
+    fn contiguous(self) -> ContiguousIntegers<I> {
+        ContiguousIntegers {
+            iterator: self,
+            previous_value: None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -84,5 +151,35 @@ mod count_jolt_differences_should {
         let result = count_jolt_differences(&compute_adapter_chain(&adapters));
 
         assert_eq!(result, (7, 5));
+    }
+}
+
+#[cfg(test)]
+mod nb_combinations_should {
+    use super::*;
+
+    #[test]
+    fn return_1_for_1() {
+        assert_eq!(nb_combinations(1), 1);
+    }
+
+    #[test]
+    fn return_1_for_2() {
+        assert_eq!(nb_combinations(2), 1);
+    }
+
+    #[test]
+    fn return_2_for_3() {
+        assert_eq!(nb_combinations(3), 2);
+    }
+
+    #[test]
+    fn return_4_for_4() {
+        assert_eq!(nb_combinations(4), 4);
+    }
+
+    #[test]
+    fn return_7_for_5() {
+        assert_eq!(nb_combinations(5), 7);
     }
 }
