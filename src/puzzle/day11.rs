@@ -2,8 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
-use crate::puzzle::day11::Space::{AvailableSeat, OccupiedSeat};
+use crate::puzzle::day11::Space::{AvailableSeat, Floor, OccupiedSeat};
 use crate::puzzle::input::read_input;
+use itertools::__std_iter::successors;
 
 pub fn execute() {
     let area = WaitingArea::from(read_input("day11").as_str());
@@ -11,12 +12,27 @@ pub fn execute() {
         "11:1 — Number of occupied seats after stabilization: {}",
         compute_stable_area(&area).nb_occupied_seats()
     );
+    println!(
+        "11:1 — Number of occupied seats after stabilization with second part rules: {}",
+        compute_stable_area_part2(&area).nb_occupied_seats()
+    );
 }
 
 fn compute_stable_area(area: &WaitingArea) -> WaitingArea {
     let mut current_area = area.next_round();
     loop {
         let new_area = current_area.next_round();
+        if new_area == current_area {
+            break current_area;
+        }
+        current_area = new_area;
+    }
+}
+
+fn compute_stable_area_part2(area: &WaitingArea) -> WaitingArea {
+    let mut current_area = area.next_round_part2();
+    loop {
+        let new_area = current_area.next_round_part2();
         if new_area == current_area {
             break current_area;
         }
@@ -61,15 +77,39 @@ impl WaitingArea {
         }
     }
 
+    fn next_round_part2(&self) -> Self {
+        Self {
+            rows: self
+                .rows
+                .iter()
+                .enumerate()
+                .map(|(r, row)| {
+                    row.iter()
+                        .enumerate()
+                        .map(
+                            |(c, space)| match (space, self.nb_visible_occupied_seats(r, c)) {
+                                (AvailableSeat, 0) => OccupiedSeat,
+                                (OccupiedSeat, n) if n >= 5 => AvailableSeat,
+                                _ => *space,
+                            },
+                        )
+                        .collect()
+                })
+                .collect(),
+        }
+    }
+
+    fn get_space(&self, row: usize, column: usize) -> Option<&Space> {
+        self.rows.get(row).and_then(|row| row.get(column))
+    }
+
     fn is_occupied(&self, row: i32, column: i32) -> bool {
         if row < 0 || column < 0 {
             false
         } else {
             matches!(
-                self.rows
-                    .get(row as usize)
-                    .and_then(|row| row.get(column as usize)),
-                Some(Space::OccupiedSeat)
+                self.get_space(row as usize, column as usize),
+                Some(&Space::OccupiedSeat)
             )
         }
     }
@@ -80,6 +120,42 @@ impl WaitingArea {
         (row - 1..=row + 1)
             .cartesian_product(column - 1..=column + 1)
             .filter(|(r, c)| (*r, *c) != (row, column) && self.is_occupied(*r, *c))
+            .count()
+    }
+
+    fn has_visible_occupied_seat_in_slope(
+        &self,
+        row: usize,
+        column: usize,
+        slope: (i32, i32),
+    ) -> bool {
+        successors(Some((row as i32, column as i32)), |(r, c)| {
+            let next = (r + slope.0, c + slope.1);
+            if self.is_in_area(next) {
+                Some(next)
+            } else {
+                None
+            }
+        })
+        .skip(1)
+        .flat_map(|(r, c)| self.get_space(r as usize, c as usize))
+        .find(|space| **space != Floor)
+        .map(|space| *space == OccupiedSeat)
+        .unwrap_or(false)
+    }
+
+    fn is_in_area(&self, (row, column): (i32, i32)) -> bool {
+        row >= 0
+            && column >= 0
+            && (row as usize) < self.rows.len()
+            && (column as usize) < self.rows.get(0).map(|c| c.len()).unwrap_or(0)
+    }
+
+    fn nb_visible_occupied_seats(&self, row: usize, column: usize) -> usize {
+        (-1..=1)
+            .cartesian_product(-1..=1)
+            .filter(|slope| *slope != (0, 0))
+            .filter(|slope| self.has_visible_occupied_seat_in_slope(row, column, *slope))
             .count()
     }
 
@@ -472,5 +548,59 @@ L.#.L..#..
 #.#L#L#.##
 "
         )
+    }
+}
+
+#[cfg(test)]
+mod nb_visible_occupied_seats_should {
+    use super::*;
+
+    #[test]
+    fn return_8_in_first_example() {
+        let area = WaitingArea::from(
+            r"
+.......#.
+...#.....
+.#.......
+.........
+..#L....#
+....#....
+.........
+#........
+...#.....
+",
+        );
+
+        assert_eq!(area.nb_visible_occupied_seats(4, 3), 8);
+    }
+
+    #[test]
+    fn return_0_in_second_example() {
+        let area = WaitingArea::from(
+            r"
+.............
+.L.L.#.#.#.#.
+.............
+",
+        );
+
+        assert_eq!(area.nb_visible_occupied_seats(1, 1), 0);
+    }
+
+    #[test]
+    fn return_0_in_third_example() {
+        let area = WaitingArea::from(
+            r"
+.##.##.
+#.#.#.#
+##...##
+...L...
+##...##
+#.#.#.#
+.##.##.
+",
+        );
+
+        assert_eq!(area.nb_visible_occupied_seats(3, 3), 0);
     }
 }
