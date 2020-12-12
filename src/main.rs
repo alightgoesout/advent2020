@@ -29,6 +29,7 @@ fn execute_puzzle(day: String) {
         "9" => puzzle::day9::execute(),
         "10" => puzzle::day10::execute(),
         "11" => puzzle::day11::execute(),
+        "12" => puzzle::day12::execute(),
         _ => println!("Unknown day: {}", day),
     }
 }
