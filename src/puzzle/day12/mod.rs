@@ -1,5 +1,7 @@
 use crate::puzzle::input::read_lines;
 
+mod part2;
+
 pub fn execute() {
     let actions = get_actions();
     let ship = Ship::new();
@@ -7,7 +9,8 @@ pub fn execute() {
     println!(
         "12:1 — Manhattan distance from origin after executing all actions: {}",
         position.manhattan_distance_from_origin(),
-    )
+    );
+    part2::execute(&actions);
 }
 
 fn get_actions() -> Vec<Action> {
@@ -138,7 +141,7 @@ impl Ship {
 }
 
 #[derive(Copy, Clone)]
-enum Action {
+pub enum Action {
     North(i32),
     South(i32),
     West(i32),
