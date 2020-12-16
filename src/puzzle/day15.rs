@@ -4,6 +4,11 @@ pub fn execute() {
     let input = vec![2, 0, 1, 9, 5, 19];
     let mut game = MemoryGame::from(&input);
     println!("15:1 — 2020th round: {}", game.play_until_round(2020));
+    let mut game = MemoryGame::from(&input);
+    println!(
+        "15:1 — 30000000th round: {}",
+        game.play_until_round(30000000)
+    );
 }
 
 struct MemoryGame {
