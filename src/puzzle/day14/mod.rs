@@ -6,6 +6,8 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
 
+mod part2;
+
 pub fn execute() {
     let instructions = read_lines("day14")
         .unwrap()
@@ -20,6 +22,7 @@ pub fn execute() {
         "14:1 — Sum of memory after initialization: {}",
         program.memory_sum()
     );
+    part2::execute();
 }
 
 struct DockingProgram {
