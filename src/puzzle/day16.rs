@@ -1,5 +1,4 @@
 use crate::puzzle::input::read_lines;
-use itertools::__std_iter::Map;
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
 use std::collections::{HashMap, HashSet};
@@ -38,7 +37,7 @@ pub fn execute() {
     let column_names = allocate_columns(matches);
     let departure_indexes: Vec<_> = column_names
         .into_iter()
-        .filter(|(i, name)| name.starts_with("departure"))
+        .filter(|(_, name)| name.starts_with("departure"))
         .map(|(i, _)| i)
         .collect();
     let product_of_departure_columns = departure_indexes
